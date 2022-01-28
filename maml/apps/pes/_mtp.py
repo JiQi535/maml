@@ -65,7 +65,7 @@ class MTPotential(LammpsPotential):
         self.elements = None
         self.version = version if version else "mlip-2"
 
-    def _line_up(self, structure, energy, forces, virial_stress):
+    def _line_up(self, structure, energy, forces, virial_stress, group_weight=None):
         """
         Convert input structure, energy, forces, virial_stress to
         proper configuration format for mlip usage.
@@ -84,6 +84,7 @@ class MTPotential(LammpsPotential):
             AtomData=(structure, forces),
             Energy=energy,
             Stress=virial_stress,
+            GroupWeight=group_weight,
         )
 
         lines = ["BEGIN_CFG"]
@@ -110,17 +111,21 @@ class MTPotential(LammpsPotential):
             if not hasattr(self, "version") or self.version == "mlip-2":
                 format_str = "{:>16s}{:>12s}{:>12s}{:>12s}{:>12s}{:>12s}"
                 lines.append(format_str.format("PlusStress:  xx", "yy", "zz", "yz", "xz", "xy"))
-            if self.version == "mlip-dev":
+            elif self.version == "mlip-dev":
                 format_str = "{:>12s}{:>12s}{:>12s}{:>12s}{:>12s}{:>12s}"
                 lines.append(format_str.format("Stress:  xx", "yy", "zz", "yz", "xz", "xy"))
             format_float = "{:>12f}{:>12f}{:>12f}{:>12f}{:>12f}{:>12f}"
             lines.append(format_float.format(*np.array(virial_stress) / 1.228445))
+        if "GroupWeight" in inputs:
+            if inputs["GroupWeight"] != 1:
+                lines.append(" GroupWeight")
+                lines.append("{:>24.12f}".format(inputs["GroupWeight"]))
 
         lines.append("END_CFG")
 
         return "\n".join(lines)
 
-    def write_cfg(self, filename, cfg_pool):
+    def write_cfg(self, filename, cfg_pool, group_weights=None):
         """
         Write configurations to file
         Args:
@@ -134,7 +139,7 @@ class MTPotential(LammpsPotential):
             raise ValueError("No species given.")
 
         lines = []
-        for dataset in cfg_pool:
+        for i, dataset in enumerate(cfg_pool):
             if isinstance(dataset["structure"], dict):
                 structure = Structure.from_dict(dataset["structure"])
             else:
@@ -143,7 +148,9 @@ class MTPotential(LammpsPotential):
             forces = dataset["outputs"]["forces"]
             virial_stress = dataset["outputs"]["virial_stress"]
             virial_stress = [virial_stress[self.vasp_stress_order.index(n)] for n in self.mtp_stress_order]
-            lines.append(self._line_up(structure, energy, forces, virial_stress))
+            if group_weights:
+                group_weight = group_weights[i]
+            lines.append(self._line_up(structure, energy, forces, virial_stress, group_weight))
 
         with open(filename, "w") as f:
             f.write("\n".join(lines))

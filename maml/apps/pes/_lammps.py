@@ -66,14 +66,14 @@ class LMPStaticCalculator:
     using LAMMPS.
     """
 
-    _COMMON_CMDS = ["units metal", "atom_style charge", "box tilt large", "read_data data.static", "run 0"]
+    _COMMON_CMDS = ["units metal", "atom_style {}", "box tilt large", "read_data data.static", "run 0"]
 
-    allowed_kwargs = ["lmp_exe"]
+    allowed_kwargs = ["lmp_exe", "atom_style"]
 
     def __init__(self, **kwargs):
         """
         Initializer for lammps calculator
-        Allowed keyword args are lmp_exe string
+        Allowed keyword args are lmp_exe string and atom_style
 
         """
         lmp_exe = kwargs.pop("lmp_exe", None)
@@ -82,6 +82,14 @@ class LMPStaticCalculator:
         if not which(lmp_exe):
             raise ValueError("lammps executable %s not found" % str(lmp_exe))
         self.LMP_EXE = lmp_exe
+
+        atom_style = kwargs.pop("atom_style", None)
+        if atom_style is None:
+            atom_style = "charge"
+            print(f"atom style is set to {atom_style}.")
+        # self.atom_style = atom_style
+        self._COMMON_CMDS[1] = self._COMMON_CMDS[1].format(atom_style)
+
         for i, j in kwargs.items():
             if i not in self.allowed_kwargs:
                 raise TypeError("%s not in supported kwargs %s" % (str(i), str(self.allowed_kwargs)))
@@ -133,6 +141,7 @@ class LMPStaticCalculator:
             ff_settings = getattr(self, "ff_settings")
             if hasattr(ff_settings, "elements"):
                 ff_elements = getattr(ff_settings, "elements")
+        # ff_elements = ["Ti","Al"]
 
         with ScratchDir("."):
             input_file = self._setup()
@@ -943,6 +952,7 @@ class SurfaceEnergy(LMPRelaxationCalculator):
         ff_settings,
         bulk_structure,
         miller_indexes,
+        bulk_structure_relaxed=True,
         min_slab_size=15,
         min_vacuum_size=15,
         lll_reduce=False,
@@ -981,15 +991,18 @@ class SurfaceEnergy(LMPRelaxationCalculator):
             box_relax (bool): Whether to allow the box size and shape of the slab structures to vary
                 during the minimization. Normally, this should be turned off.
         """
+        if not bulk_structure_relaxed:
+            super().__init__(ff_settings=ff_settings, box_relax=True, **kwargs)
+            bulk_structure, bulk_energy, _, _ = super().calculate([bulk_structure])[0]
+        else:
+            efs_calculator = EnergyForceStress(ff_settings=ff_settings)
+            bulk_energy, _, _ = efs_calculator.calculate([bulk_structure])[0]
+        self.bulk_energy_per_atom = bulk_energy / bulk_structure.num_sites
 
-        super().__init__(ff_settings=ff_settings, box_relax=True, **kwargs)
-        bulk_structure_relaxed, bulk_energy, _, _ = super().calculate([bulk_structure])[0]
-        self.bulk_energy_per_atom = bulk_energy / bulk_structure_relaxed.num_sites
         from pymatgen.core.surface import SlabGenerator
-
         slab_generators = [
             SlabGenerator(
-                initial_structure=bulk_structure_relaxed,
+                initial_structure=bulk_structure,
                 miller_index=miller_index,
                 min_slab_size=min_slab_size,
                 min_vacuum_size=min_vacuum_size,
