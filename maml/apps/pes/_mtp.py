@@ -116,10 +116,9 @@ class MTPotential(LammpsPotential):
                 lines.append(format_str.format("Stress:  xx", "yy", "zz", "yz", "xz", "xy"))
             format_float = "{:>12f}{:>12f}{:>12f}{:>12f}{:>12f}{:>12f}"
             lines.append(format_float.format(*np.array(virial_stress) / 1.228445))
-        if "GroupWeight" in inputs:
-            if inputs["GroupWeight"] != 1:
-                lines.append(" GroupWeight")
-                lines.append("{:>24.12f}".format(inputs["GroupWeight"]))
+        if inputs["GroupWeight"] != 1 and inputs["GroupWeight"] is not None:
+            lines.append(" GroupWeight")
+            lines.append("{:>24.12f}".format(inputs["GroupWeight"]))
 
         lines.append("END_CFG")
 
@@ -148,6 +147,7 @@ class MTPotential(LammpsPotential):
             forces = dataset["outputs"]["forces"]
             virial_stress = dataset["outputs"]["virial_stress"]
             virial_stress = [virial_stress[self.vasp_stress_order.index(n)] for n in self.mtp_stress_order]
+            group_weight = None
             if group_weights:
                 group_weight = group_weights[i]
             lines.append(self._line_up(structure, energy, forces, virial_stress, group_weight))
@@ -534,6 +534,7 @@ class MTPotential(LammpsPotential):
         train_energies,
         train_forces,
         train_stresses,
+        train_weights=None,
         unfitted_mtp="08g.mtp",
         max_dist=5,
         radial_basis_size=8,
@@ -593,7 +594,7 @@ class MTPotential(LammpsPotential):
         atoms_filename = "train.cfgs"
 
         with ScratchDir("."):
-            atoms_filename = self.write_cfg(filename=atoms_filename, cfg_pool=train_pool)
+            atoms_filename = self.write_cfg(filename=atoms_filename, cfg_pool=train_pool, group_weights=train_weights)
 
             if not unfitted_mtp:
                 raise RuntimeError("No specific parameter file provided.")
