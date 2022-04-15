@@ -1,24 +1,22 @@
 """
 Module implemets the BayesianOptimizer.
 """
-from copy import copy
 import warnings
-from typing import Dict, List, Tuple, Any
+from copy import copy
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
-
 from pymatgen.core.operations import SymmOp
-from pymatgen.core.structure import Structure, Lattice
+from pymatgen.core.structure import Lattice, Structure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from sklearn.base import clone
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RationalQuadratic
 
-from maml.apps.bowsr.acquisition import AcquisitionFunction
-from maml.apps.bowsr.acquisition import ensure_rng, propose_query_point
+from maml.apps.bowsr.acquisition import AcquisitionFunction, ensure_rng, propose_query_point
 from maml.apps.bowsr.model import EnergyModel
-from maml.apps.bowsr.perturbation import WyckoffPerturbation, LatticePerturbation, get_standardized_structure
-from maml.apps.bowsr.preprocessing import StandardScaler, DummyScaler
+from maml.apps.bowsr.perturbation import LatticePerturbation, WyckoffPerturbation, get_standardized_structure
+from maml.apps.bowsr.preprocessing import DummyScaler, StandardScaler
 from maml.apps.bowsr.target_space import TargetSpace
 
 
@@ -177,7 +175,7 @@ class BayesianOptimizer:
         self.angles_dim = angles_dim
 
         # Initialize internal GaussianProcessRegressor
-        self._gpr = GaussianProcessRegressor(kernel=RationalQuadratic(length_scale=1.0), alpha=0.028 ** 2)
+        self._gpr = GaussianProcessRegressor(kernel=RationalQuadratic(length_scale=1.0), alpha=0.028**2)
 
     def get_derived_structure(self, x: np.ndarray) -> Structure:
         """
@@ -396,9 +394,9 @@ class BayesianOptimizer:
 
     def __repr__(self):
         return (
-            "{0}(relax_coords={1}, relax_lattice={2}, use_symmetry={3}"
-            "\n\t\twyckoff_dims={4}, abc_dim={5}, "
-            "\n\t\tangles_dim={6}, kernel={7}, scaler={8}, noisy={9})".format(
+            "{}(relax_coords={}, relax_lattice={}, use_symmetry={}"
+            "\n\t\twyckoff_dims={}, abc_dim={}, "
+            "\n\t\tangles_dim={}, kernel={}, scaler={}, noisy={})".format(
                 self.__class__.__name__,
                 self.relax_coords,
                 self.relax_lattice,

@@ -1,18 +1,16 @@
-# coding: utf-8
-
 import unittest
 
-import pandas as pd
 import numpy as np
-from pymatgen.core import Structure, Element, Lattice
+import pandas as pd
+from pymatgen.core import Element, Lattice, Structure
 from pymatgen.util.testing import PymatgenTest
 
 from maml.describers._structure import (
-    DistinctSiteProperty,
-    CoulombMatrix,
-    SortedCoulombMatrix,
-    RandomizedCoulombMatrix,
     CoulombEigenSpectrum,
+    CoulombMatrix,
+    DistinctSiteProperty,
+    RandomizedCoulombMatrix,
+    SortedCoulombMatrix,
 )
 
 
@@ -120,8 +118,8 @@ class CoulomMatrixTest(unittest.TestCase):
         na = Element("Na")
         cl = Element("Cl")
         dist = self.s1.distance_matrix
-        self.assertEqual(cmat[0][0], (na.Z ** 2.4) * 0.5)
-        self.assertEqual(cmat[4][4], (cl.Z ** 2.4) * 0.5)
+        self.assertEqual(cmat[0][0], (na.Z**2.4) * 0.5)
+        self.assertEqual(cmat[4][4], (cl.Z**2.4) * 0.5)
         self.assertEqual(cmat[0][1], (na.Z * na.Z) / dist[0][1])
 
     def test_sorted_coulomb_mat(self):

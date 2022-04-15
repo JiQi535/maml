@@ -1,8 +1,7 @@
-# coding: utf-8
 # Copyright (c) Materials Virtual Lab
 # Distributed under the terms of the BSD License.
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 long_desc = """
 maml (MAterials Machine Learning) is a Python package that aims to provide useful high-level interfaces that make ML
@@ -87,7 +86,7 @@ For the ML-IAP package (`maml.pes`), please cite::
 setup(
     name="maml",
     packages=find_packages(),
-    version="2021.10.14",
+    version="2021.12.13",
     install_requires=["numpy", "scipy", "monty", "scikit-learn", "pandas", "pymatgen", "tqdm"],
     extras_requires={
         "maml.apps.symbolic._selectors_cvxpy": ["cvxpy"],

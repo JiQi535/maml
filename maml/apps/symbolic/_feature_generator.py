@@ -4,7 +4,7 @@ Feature Generator
 import warnings
 from functools import partial
 from itertools import combinations_with_replacement
-from typing import Optional, Callable, Any, Union, Dict
+from typing import Any, Callable, Dict, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -19,7 +19,7 @@ def _update_df(df, op, fn1, fn2=None):
             if op.rep in ["sqrt", "log10"]:
                 if np.any(df[fn1] < 0):
                     warnings.warn(
-                        "Data {} Contains negative number, ".format(fn1)
+                        f"Data {fn1} Contains negative number, "
                         + "sqrt will return complex number. "
                         + "Consider using abssqrt or abslog10"
                     )

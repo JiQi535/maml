@@ -1,11 +1,10 @@
-# coding: utf-8
 # Copyright (c) Materials Virtual Lab
 # Distributed under the terms of the BSD License.
 
 import os
 import shutil
-import unittest
 import tempfile
+import unittest
 
 from monty.os.path import which
 from monty.serialization import loadfn

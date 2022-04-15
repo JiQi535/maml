@@ -1,6 +1,20 @@
 Change log
 ==========
 
+v2021.1.28
+----------
+* Fix SNAP stress components
+* Fix unexpected test outcome in BOWSR and symbolic regression
+
+v2021.12.13
+-----------
+* Update dependencies
+* Fix bugs
+
+v2021.10.13
+-----------
+* add bowsr
+
 v2021.3.2
 ---------
 * Set up namespace package architecture for maml.apps. The RFXAS package is now available as a separate package
@@ -23,7 +37,7 @@ v0.0.3
 
 v0.0.2
 ------
-* major refactor 
+* major refactor
 * move mlearn potential energy surfaces to apps
 * fix potential problem of rotated structure in lammps
 * add rfxas app

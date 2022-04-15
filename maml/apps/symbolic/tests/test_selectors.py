@@ -1,20 +1,21 @@
 # flake8: noqa
 
-import unittest
+import json
 import os
+import unittest
 
 import numpy as np
-import json
 from pymatgen.util.testing import PymatgenTest
 
 try:
     import cvxpy as cp
-    from maml.apps.symbolic._selectors_cvxpy import cp, DantzigSelectorCP, LassoCP, AdaptiveLassoCP
+
+    from maml.apps.symbolic._selectors_cvxpy import AdaptiveLassoCP, DantzigSelectorCP, LassoCP, cp
 
 except ImportError:
     cp = None  # noqa
 
-from maml.apps.symbolic._selectors import DantzigSelector, Lasso, AdaptiveLasso, SCAD, L0BrutalForce
+from maml.apps.symbolic._selectors import SCAD, AdaptiveLasso, DantzigSelector, L0BrutalForce, Lasso
 
 CWD = os.path.abspath(os.path.dirname(__file__))
 
@@ -23,7 +24,7 @@ class TestSelectors(PymatgenTest):
     @classmethod
     def setUpClass(cls):
         np.random.seed(42)
-        with open(os.path.join(CWD, "test_data.json"), "r") as f:
+        with open(os.path.join(CWD, "test_data.json")) as f:
             djson = json.load(f)
         cls.x = np.array(djson["x"])
         cls.beta = np.array(djson["beta"])

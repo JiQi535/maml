@@ -3,8 +3,8 @@ from typing import Optional, Sequence
 
 import tensorflow as tf
 import tensorflow.keras.backend as kb
+from tensorflow.keras import activations, constraints, initializers, regularizers
 from tensorflow.keras.layers import Layer
-from tensorflow.keras import activations, initializers, regularizers, constraints
 
 
 class WeightedAverageLayer(Layer):
@@ -44,7 +44,7 @@ class WeightedAverageLayer(Layer):
         # weight: [1, n]
         # index： [1, n]
         prop, weights, index = inputs
-        expo_weights = weights ** self.alpha
+        expo_weights = weights**self.alpha
         prop = prop * expo_weights[:, :, None]
         prop_sum = self.reduce_sum(prop, index, perm=[1, 0, 2])
         weight_sum = self.reduce_sum(expo_weights, index, perm=[1, 0])

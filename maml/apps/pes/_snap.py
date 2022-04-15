@@ -1,20 +1,22 @@
-# coding: utf-8
 # Copyright (c) Materials Virtual Lab
 # Distributed under the terms of the BSD License.
 
 """This module provides SNAP interatomic potential class."""
 
 import re
+from logging import getLogger
 
 import numpy as np
-from sklearn.linear_model import LinearRegression
-
 from monty.io import zopen
+from sklearn.linear_model import LinearRegression
 
 from maml.base import SKLModel
 from maml.describers import BispectrumCoefficients
-from maml.utils import pool_from, convert_docs, check_structures_forces_stresses
+from maml.utils import check_structures_forces_stresses, convert_docs, pool_from, stress_format_change
+
 from ._lammps import LammpsPotential
+
+logger = getLogger(__name__)
 
 
 class SNAPotential(LammpsPotential):
@@ -36,12 +38,28 @@ class SNAPotential(LammpsPotential):
                 atomic descriptos as features and properties as targets.
             name (str): Name of force field.
         """
+
+        logger.warning(
+            "Triclinic structures will be rotated to lammps format. "
+            "Please be sure to rotate forces and stresses to get the "
+            "correct mapping for ensuring correct mapping. You may "
+            "use`maml.utils.check_structures_forces_stresses` to do the "
+            "correct rotations."
+        )
+
         self.name = name if name else "SNAPotential"
         self.model = model
         self.elements = self.model.describer.elements
 
     def train(
-        self, train_structures, train_energies, train_forces, train_stresses=None, include_stress=False, **kwargs
+        self,
+        train_structures,
+        train_energies,
+        train_forces,
+        train_stresses=None,
+        include_stress=False,
+        stress_format="VASP",
+        **kwargs,
     ):
         """
         Training data with models.
@@ -58,17 +76,31 @@ class SNAPotential(LammpsPotential):
             train_stresses (list): List of (6, ) virial stresses of each
                 structure in structures list.
             include_stress (bool): Whether to include stress components.
+            stress_format (string): stress format, default to VASP
         """
         train_structures, train_forces, train_stresses = check_structures_forces_stresses(
-            train_structures, train_forces, train_stresses
+            train_structures, train_forces, train_stresses, stress_format=stress_format
         )
+        if include_stress:
+            train_stresses = [
+                stress_format_change(i, from_format=stress_format, to_format="SNAP") for i in train_stresses
+            ]
+
         train_pool = pool_from(train_structures, train_energies, train_forces, train_stresses)
         _, df = convert_docs(train_pool, include_stress=include_stress)
         ytrain = df["y_orig"] / df["n"]
         xtrain = self.model.describer.transform(train_structures)
         self.model.fit(features=xtrain, targets=ytrain, **kwargs)
 
-    def evaluate(self, test_structures, test_energies, test_forces, test_stresses=None, include_stress=False):
+    def evaluate(
+        self,
+        test_structures,
+        test_energies,
+        test_forces,
+        test_stresses=None,
+        include_stress=False,
+        stress_format="VASP",
+    ):
         """
         Evaluate energies, forces and stresses of structures with trained
         machinea learning potentials.
@@ -83,10 +115,16 @@ class SNAPotential(LammpsPotential):
             test_stresses (list): List of DFT-calculated (6, ) viriral stresses
                 of each structure in structures list.
             include_stress (bool): Whether to include stress components.
+            stress_format (str): stress format, default to "VASP"
         """
         test_structures, test_forces, test_stresses = check_structures_forces_stresses(
             test_structures, test_forces, test_stresses
         )
+        if include_stress:
+            test_stresses = [
+                stress_format_change(i, from_format=stress_format, to_format="SNAP") for i in test_stresses
+            ]
+
         predict_pool = pool_from(test_structures, test_energies, test_forces, test_stresses)
         _, df_orig = convert_docs(predict_pool, include_stress=include_stress)
         _, df_predict = convert_docs(pool_from(test_structures), include_stress=include_stress)
@@ -99,8 +137,8 @@ class SNAPotential(LammpsPotential):
         """
         Write parameter and coefficient file to perform lammps calculation.
         """
-        param_file = "{}.snapparam".format(self.name)
-        coeff_file = "{}.snapcoeff".format(self.name)
+        param_file = f"{self.name}.snapparam"
+        coeff_file = f"{self.name}.snapcoeff"
         model = self.model
         describer = self.model.describer
         profile = describer.element_profile
@@ -110,7 +148,7 @@ class SNAPotential(LammpsPotential):
             nbc += int((1 + nbc) * nbc / 2)
 
         coeff_lines = []
-        coeff_lines.append("{} {}".format(ne, nbc + 1))
+        coeff_lines.append(f"{ne} {nbc + 1}")
         for element, coeff in zip(self.elements, np.split(model.model.coef_, ne)):
             coeff_lines.append("{} {} {}".format(element, profile[element]["r"], profile[element]["w"]))
             coeff_lines.extend([str(c) for c in coeff])
@@ -119,9 +157,9 @@ class SNAPotential(LammpsPotential):
 
         param_lines = []
         keys = ["rcutfac", "twojmax"]
-        param_lines.extend(["{} {}".format(k, getattr(describer, k)) for k in keys])
+        param_lines.extend([f"{k} {getattr(describer, k)}" for k in keys])
         param_lines.extend(["rfac0 0.99363", "rmin0 0"])
-        param_lines.append("quadraticflag {}".format(int(describer.quadratic)))
+        param_lines.append(f"quadraticflag {int(describer.quadratic)}")
         param_lines.append("bzeroflag 0")
         with open(param_file, "w") as f:
             f.write("\n".join(param_lines))

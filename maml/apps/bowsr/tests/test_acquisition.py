@@ -1,12 +1,13 @@
-import numpy as np
 import unittest
+
+import numpy as np
 from scipy.special import erfc
 from scipy.stats import norm
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Matern, RationalQuadratic
 
-from maml.apps.bowsr.acquisition import ensure_rng, propose_query_point, AcquisitionFunction, predict_mean_std
-from maml.apps.bowsr.preprocessing import StandardScaler, DummyScaler
+from maml.apps.bowsr.acquisition import AcquisitionFunction, ensure_rng, predict_mean_std, propose_query_point
+from maml.apps.bowsr.preprocessing import DummyScaler, StandardScaler
 
 
 class AcquisitionFunctionTest(unittest.TestCase):
@@ -193,7 +194,7 @@ class AcquisitionFunctionTest(unittest.TestCase):
 
     def test_distribution(self):
         z = np.random.random(5)
-        pdf = np.exp(-0.5 * z ** 2) / np.sqrt(2 * np.pi)
+        pdf = np.exp(-0.5 * z**2) / np.sqrt(2 * np.pi)
         cdf = 0.5 * erfc(-z / np.sqrt(2))
         self.assertTrue(np.all(abs(pdf - norm.pdf(z)) < 1e-4))
         self.assertTrue(np.all(abs(cdf - norm.cdf(z)) < 1e-4))

@@ -1,16 +1,16 @@
-# coding: utf-8
 # Copyright (c) Materials Virtual Lab
 # Distributed under the terms of the BSD License.
 
 import os
 import shutil
-import unittest
 import tempfile
+import unittest
 
 import numpy as np
 from monty.os.path import which
 from monty.serialization import loadfn
 from pymatgen.core import Structure
+
 from maml.apps.pes import NNPotential
 
 CWD = os.getcwd()

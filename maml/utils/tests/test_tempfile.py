@@ -1,9 +1,10 @@
-from glob import glob
 import os
 import unittest
+from glob import glob
+
+from monty.tempfile import ScratchDir
 
 from maml.utils._tempfile import MultiScratchDir
-from monty.tempfile import ScratchDir
 
 
 class TestMultiScratchDir(unittest.TestCase):
@@ -16,7 +17,7 @@ class TestMultiScratchDir(unittest.TestCase):
                     os.system("touch tempfile")
                     os.chdir("..")
             tempfiles = set(glob("tempfile*"))
-            self.assertEqual(set(["tempfile_%d" % i for i in range(4)]), tempfiles)
+            self.assertEqual({"tempfile_%d" % i for i in range(4)}, tempfiles)
 
 
 if __name__ == "__main__":

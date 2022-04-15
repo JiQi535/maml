@@ -1,12 +1,13 @@
-import numpy as np
 import os
 import unittest
+
+import numpy as np
 from pymatgen.core.structure import Structure
 
 from maml.apps.bowsr.acquisition import ensure_rng
 from maml.apps.bowsr.optimizer import struct2perturbation
 from maml.apps.bowsr.perturbation import WyckoffPerturbation
-from maml.apps.bowsr.preprocessing import StandardScaler, DummyScaler
+from maml.apps.bowsr.preprocessing import DummyScaler, StandardScaler
 from maml.apps.bowsr.target_space import TargetSpace
 
 test_lfpo = Structure.from_file(os.path.join(os.path.dirname(__file__), "test_structures", "test_lfpo.cif"))
@@ -22,7 +23,7 @@ class TargetSpaceTest(unittest.TestCase):
         self.abc_dim = 3
         self.angles_dim = 0
         self.space1 = TargetSpace(
-            target_func=lambda x: sum(x ** 2),
+            target_func=lambda x: sum(x**2),
             wps=self.wps,
             abc_dim=self.abc_dim,
             angles_dim=self.angles_dim,
@@ -39,7 +40,7 @@ class TargetSpaceTest(unittest.TestCase):
             relax_coords=True,
             relax_lattice=False,
             scaler=DummyScaler(),
-            random_state=ensure_rng((42)),
+            random_state=ensure_rng(42),
         )
         self.space3 = TargetSpace(
             target_func=lambda x: np.mean(x * 3),
@@ -141,7 +142,7 @@ class TargetSpaceTest(unittest.TestCase):
             target = self.space1.target_func(sample)
             self.space1.register(sample, target)
         self.assertEqual(len(self.space1), 10)
-        self.assertTrue(all(abs(np.sum(self.space1.params ** 2, axis=1) - self.space1.target) < 1e-2))
+        self.assertTrue(all(abs(np.sum(self.space1.params**2, axis=1) - self.space1.target) < 1e-2))
 
         for _ in range(20):
             sample = self.space2.uniform_sample()

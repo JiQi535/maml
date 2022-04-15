@@ -2,10 +2,10 @@
 LAMMPS utility
 """
 import logging
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
-from pymatgen.core import Structure, Element, Species, Lattice
+from pymatgen.core import Element, Lattice, Species, Structure
 from pymatgen.core.operations import SymmOp
 
 logging.basicConfig()
@@ -84,10 +84,16 @@ def check_structures_forces_stresses(
             new_forces.append(None)
 
         if not no_stress:
-            stress_matrix = stress_list_to_matrix(stresses[i], stress_format)
-            stress_matrix = rot_matrix.dot(stress_matrix).dot(rot_matrix.T)
+            if np.size(stresses[i]) != 9:
+                # voigt stress format
+                stress_matrix = stress_list_to_matrix(stresses[i], stress_format)
+                stress_matrix = rot_matrix.dot(stress_matrix).dot(rot_matrix.T)
+                stress_matrix = stress_matrix_to_list(stress_matrix, stress_format)
+            else:
+                # 3x3 stress matrix
+                stress_matrix = rot_matrix.dot(stresses[i]).dot(rot_matrix.T)
             # R \sigma R^T stress rotation
-            new_stresses.append(stress_matrix_to_list(stress_matrix, stress_format))
+            new_stresses.append(stress_matrix)
         else:
             new_stresses.append(None)
 
@@ -177,10 +183,10 @@ def get_lammps_lattice_and_rotation(structure: Structure, origin=(0, 0, 0)) -> T
     xhi = a + xlo
     m = lattice.matrix
     xy = np.dot(m[1], m[0] / a)
-    yhi = np.sqrt(b ** 2 - xy ** 2) + ylo
+    yhi = np.sqrt(b**2 - xy**2) + ylo
     xz = np.dot(m[2], m[0] / a)
     yz = (np.dot(m[1], m[2]) - xy * xz) / (yhi - ylo)
-    zhi = np.sqrt(c ** 2 - xz ** 2 - yz ** 2) + zlo
+    zhi = np.sqrt(c**2 - xz**2 - yz**2) + zlo
     # tilt = None if lattice.is_orthogonal else [xy, xz, yz]
     new_matrix = np.array([[xhi - xlo, 0, 0], [xy, yhi - ylo, 0], [xz, yz, zhi - zlo]])
     rot_matrix = np.linalg.solve(new_matrix, m)
@@ -239,7 +245,7 @@ def write_data_from_structure(
     ph = "{:.%df}" % significant_figures
 
     for bound, d in zip(bounds, "xyz"):
-        line = " ".join([ph.format(i) for i in bound] + ["%s%s" % (d, i) for i in ["lo", "hi"]])
+        line = " ".join([ph.format(i) for i in bound] + [f"{d}{i}" for i in ["lo", "hi"]])
         lines.append(line)
     if tilt is not None:
         line = " ".join([ph.format(i) for i in tilt] + ["xy", "xz", "yz"])

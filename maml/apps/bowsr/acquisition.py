@@ -1,7 +1,7 @@
 """
 Module implements the new candidate proposal.
 """
-from typing import Union, List, Tuple, Any
+from typing import Any, List, Tuple, Union
 
 import numpy as np
 from numpy.random import RandomState
@@ -9,6 +9,8 @@ from scipy.linalg import solve_triangular
 from scipy.optimize import minimize
 from scipy.special import erfc
 from sklearn.gaussian_process import GaussianProcessRegressor
+
+EPS = np.finfo(float).eps
 
 
 def _trunc(values: np.ndarray, decimals: int = 3):
@@ -21,7 +23,7 @@ def _trunc(values: np.ndarray, decimals: int = 3):
     Returns: truncated array
 
     """
-    return np.trunc(values * 10 ** decimals) / 10 ** decimals
+    return np.trunc(values * 10**decimals) / 10**decimals
 
 
 def ensure_rng(seed: int = None) -> RandomState:
@@ -56,7 +58,7 @@ def predict_mean_std(x: Union[List, np.ndarray], gpr: GaussianProcessRegressor, 
     y_mean = K_trans.dot(gpr.alpha_) + gpr._y_train_mean
     y_var = gpr.kernel_.diag(X)
     y_var = y_var - np.einsum("ij,ij->i", np.dot(K_trans, gpr._K_inv), K_trans)
-    y_var += noise ** 2
+    y_var += noise**2
     return tuple((y_mean, np.sqrt(y_var)))
 
 
@@ -119,13 +121,14 @@ def propose_query_point(
 
     # print(x_max.reshape(-1, dim))
     # print(bounds)
-    res = minimize(min_obj, x0=x_max.reshape(-1, dim), bounds=bounds, method="L-BFGS-B")
 
+    x0 = x_max.reshape(-1, dim)
+    # make sure that the initial conditions fall into the bounds
+    x0 = np.clip(x0, bounds[:, 0] + 3 * EPS, bounds[:, 1] - 3 * EPS)
+
+    res = minimize(min_obj, x0=x0, bounds=bounds, method="L-BFGS-B")
     if -res.fun[0] >= acq_max:
         x_max = res.x
-
-    # Clip output to make sure it lies within the bounds.
-    # return np.clip(scaler.inverse_transform(x_max), bounds[:, 0], bounds[:, 1])
     return _trunc(scaler.inverse_transform(x_max), decimals=3)
 
 
@@ -192,7 +195,7 @@ class AcquisitionFunction:
 
         imp = mean - y_max - xi
         z = imp / std
-        pdf = np.exp(-0.5 * z ** 2) / np.sqrt(2 * np.pi)
+        pdf = np.exp(-0.5 * z**2) / np.sqrt(2 * np.pi)
         cdf = 0.5 * erfc(-z / np.sqrt(2))
         return imp * cdf + std * pdf
 
