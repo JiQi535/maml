@@ -313,7 +313,8 @@ class GAPotential(LammpsPotential):
             param = kwargs.get(param_name) if kwargs.get(param_name) else soap_params.get(param_name)
             gap_command.append(param_name + "=" + "{}".format(param))
         gap_command.append("add_species=T")
-        exe_command.append("gap.2020.01=" + "{" + "{}".format(" ".join(gap_command)) + "}")
+        exe_command.append("gap=" + "{" + "{}".format(" ".join(gap_command)) + "}")
+        # exe_command.append("gap.2020.01=" + "{" + "{}".format(" ".join(gap_command)) + "}")
 
         for param_name in preprocess_params:
             param = kwargs.get(param_name) if kwargs.get(param_name) else soap_params.get(param_name)
