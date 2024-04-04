@@ -1,7 +1,6 @@
-"""
-Multi-layer perceptron models
-"""
-from typing import Optional
+"""Multi-layer perceptron models."""
+
+from __future__ import annotations
 
 from maml.base import BaseDescriber, KerasModel
 
@@ -17,7 +16,7 @@ def construct_mlp(
     compile_metrics: tuple = (),
 ):
     """
-    Constructor for multi-layer perceptron models
+    Constructor for multi-layer perceptron models.
 
     Args:
         input_dim (int): input dimension, i.e., feature dimension
@@ -38,7 +37,7 @@ def construct_mlp(
         out_ = Dense(n_neuron, activation=activation)(out_)
 
     if is_classification:
-        final_act: Optional[str] = "sigmoid"
+        final_act: str | None = "sigmoid"
     else:
         final_act = None
     out = Dense(n_targets, activation=final_act)(out_)
@@ -49,14 +48,12 @@ def construct_mlp(
 
 
 class MLP(KerasModel):
-    """
-    This class implements the multi-layer perceptron models
-    """
+    """This class implements the multi-layer perceptron models."""
 
     def __init__(
         self,
-        input_dim: Optional[int] = None,
-        describer: Optional[BaseDescriber] = None,
+        input_dim: int | None = None,
+        describer: BaseDescriber | None = None,
         n_neurons: tuple = (64, 64),
         activation: str = "relu",
         n_targets: int = 1,
@@ -67,16 +64,19 @@ class MLP(KerasModel):
         **kwargs,
     ):
         """
-        Constructor for multi-layer perceptron models
+        Constructor for multi-layer perceptron models.
 
         Args:
             input_dim (int): input dimension, i.e., feature dimension
+            describer: a BaseDescriber featurizer.
+            n_neurons: number of neurons in each layer of MLP.
             activation (str): activation function
             n_targets (int): number of targets
             is_classification (bool): whether the target is a classification problem
             optimizer (str): optimizer
             loss (str): loss function
             compile_metrics (tuple): metrics to evaluate during epochs
+            **kwargs: pass to constructor of KerasModel.
         """
         input_dim = self.get_input_dim(describer, input_dim)
         if input_dim is None:

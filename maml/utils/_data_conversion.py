@@ -1,6 +1,7 @@
-"""
-Convert data list to docs or pool existing data lists for training
-"""
+"""Convert data list to docs or pool existing data lists for training."""
+
+from __future__ import annotations
+
 import numpy as np
 import pandas as pd
 from pymatgen.core import Structure
@@ -27,8 +28,7 @@ def doc_from(structure, energy=None, force=None, stress=None):
     force = force if force is not None else np.zeros((len(structure), 3))
     stress = stress if stress is not None else np.zeros(6)
     outputs = dict(energy=energy, forces=force, virial_stress=stress)
-    doc = dict(structure=structure.as_dict(), num_atoms=len(structure), outputs=outputs)
-    return doc
+    return dict(structure=structure.as_dict(), num_atoms=len(structure), outputs=outputs)
 
 
 def pool_from(structures, energies=None, forces=None, stresses=None):
@@ -52,11 +52,10 @@ def pool_from(structures, energies=None, forces=None, stresses=None):
     energies = energies if energies is not None else [None] * len(structures)
     forces = forces if forces is not None else [None] * len(structures)
     stresses = stresses if stresses is not None else [None] * len(structures)
-    datapool = [
+    return [
         doc_from(structure, energy, force, stress)
         for structure, energy, force, stress in zip(structures, energies, forces, stresses)
     ]
-    return datapool
 
 
 def convert_docs(docs, include_stress=False, **kwargs):
@@ -68,6 +67,7 @@ def convert_docs(docs, include_stress=False, **kwargs):
         docs ([dict]): List of docs. Each doc should have the same
             format as one returned from .dft.parse_dir.
         include_stress (bool): Whether to include stress components.
+        **kwargs: Passthrough.
 
     Returns:
         A list of structures, and a DataFrame with energy and force
@@ -78,10 +78,7 @@ def convert_docs(docs, include_stress=False, **kwargs):
     """
     structures, y_orig, n, dtype = [], [], [], []
     for d in docs:
-        if isinstance(d["structure"], dict):
-            structure = Structure.from_dict(d["structure"])
-        else:
-            structure = d["structure"]
+        structure = Structure.from_dict(d["structure"]) if isinstance(d["structure"], dict) else d["structure"]
         outputs = d["outputs"]
         force_arr = np.array(outputs["forces"])
         assert force_arr.shape == (len(structure), 3), "Wrong force array not matching structure"
@@ -108,11 +105,10 @@ def to_array(x):
     Convert x into numerical array
     Args:
         x: x can be a dataframe, a list or an array
-    return np.ndarray
+    return np.ndarray.
     """
-
     if isinstance(x, pd.DataFrame):
-        return x.values
+        return x.to_numpy()
     if isinstance(x, list):
         return np.array([to_array(i) for i in x])
     if isinstance(x, np.ndarray):
