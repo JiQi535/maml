@@ -1,7 +1,10 @@
-"""
-maml - materials machine learning
-"""
+"""maml - materials machine learning."""
 
-__version__ = "2022.9.20"
+from __future__ import annotations
 
-__import__("pkg_resources").declare_namespace(__name__)
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("maml")
+except PackageNotFoundError:
+    pass  # package not installed

@@ -1,9 +1,9 @@
-"""
-Deep learning module
-"""
+"""Deep learning module."""
 
-from ._atomsets import AtomSets  # noqa
-from ._layers import WeightedAverageLayer, WeightedSet2Set  # noqa
-from ._mlp import MLP  # noqa
+from __future__ import annotations
+
+from ._atomsets import AtomSets
+from ._layers import WeightedAverageLayer, WeightedSet2Set
+from ._mlp import MLP
 
 __all__ = ["WeightedAverageLayer", "WeightedSet2Set", "AtomSets", "MLP"]
