@@ -3,6 +3,7 @@ pytest-cov==4.0.0
 coveralls==3.3.1
 mypy
 pydocstyle
-pylint
 black
-flake8
+ruff
+megnet
+m3gnet

@@ -3,21 +3,20 @@ Describer for converting (structural) objects into models-readable
 numeric vectors or tensors.
 """
 
-from ._composition import ElementProperty, ElementStats  # noqa
-from ._site import SmoothOverlapAtomicPosition  # noqa
-from ._site import (  # noqa
-    BispectrumCoefficients,
-    BPSymmetryFunctions,
-    MEGNetSite,
-    SiteElementProperty,
-)
-from ._structure import CoulombMatrix  # noqa
-from ._structure import SortedCoulombMatrix  # noqa
+from __future__ import annotations
+
+from ._composition import ElementProperty, ElementStats
+from ._m3gnet import M3GNetSite, M3GNetStructure
+from ._matminer import wrap_matminer_describer
+from ._megnet import MEGNetSite, MEGNetStructure
+from ._rdf import RadialDistributionFunction
+from ._site import BispectrumCoefficients, BPSymmetryFunctions, SiteElementProperty, SmoothOverlapAtomicPosition
 from ._structure import (
     CoulombEigenSpectrum,
+    CoulombMatrix,
     DistinctSiteProperty,
-    MEGNetStructure,
     RandomizedCoulombMatrix,
+    SortedCoulombMatrix,
 )
 
 __all__ = [
@@ -34,4 +33,8 @@ __all__ = [
     "MEGNetStructure",
     "CoulombEigenSpectrum",
     "SiteElementProperty",
+    "wrap_matminer_describer",
+    "M3GNetStructure",
+    "M3GNetSite",
+    "RadialDistributionFunction",
 ]
