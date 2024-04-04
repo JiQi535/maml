@@ -1,6 +1,5 @@
-"""
-Module implements the scaler.
-"""
+"""Module implements the scaler."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -13,11 +12,15 @@ class StandardScaler(MSONable):
     dictionary representation.
     """
 
-    def __init__(self, mean: list | np.ndarray | None = None, std: list | np.ndarray | None = None):
+    def __init__(
+        self,
+        mean: list | np.ndarray | None = None,
+        std: list | np.ndarray | None = None,
+    ):
         """
         Args:
             mean: np.ndarray, mean values
-            std: np.ndnarray, standard deviations
+            std: np.ndnarray, standard deviations.
         """
         self.mean = mean
         self.std = std
@@ -63,16 +66,12 @@ class StandardScaler(MSONable):
         return f"{self.__class__.__name__}(mean={self.mean}, std={self.std})"
 
     def as_dict(self):
-        """
-        Dict representation of StandardScaler.
-        """
-        d = {
+        """Dict representation of StandardScaler."""
+        return {
             "@module": self.__class__.__module__,
             "@class": self.__class__.__name__,
             "params": {"mean": self.mean.tolist(), "std": self.std.tolist()},
         }
-
-        return d
 
     @classmethod
     def from_dict(cls, d):
@@ -80,16 +79,14 @@ class StandardScaler(MSONable):
         Reconstitute a StandardScaler object from a dict representation of
         StandardScaler created using as_dict().
 
-        Args
+        Args:
             d (dict): Dict representation of StandardScaler.
         """
         return cls(**d["params"])
 
 
 class DummyScaler(MSONable):
-    """
-    Dummy scaler does nothing.
-    """
+    """Dummy scaler does nothing."""
 
     def fit(self, target: list | np.ndarray) -> None:
         """
@@ -126,21 +123,24 @@ class DummyScaler(MSONable):
 
     def as_dict(self):
         """
-        Serialize the instance into dictionary
-        Returns:
-        """
-        d = {"@module": self.__class__.__module__, "@class": self.__class__.__name__, "params": {}}
+        Serialize the instance into dictionary.
 
-        return d
+        Returns: dict.
+        """
+        return {
+            "@module": self.__class__.__module__,
+            "@class": self.__class__.__name__,
+            "params": {},
+        }
 
     @classmethod
     def from_dict(cls, d):
         """
         Deserialize from a dictionary
         Args:
-            d: Dict, dictionary contain class initialization parameters
+            d: Dict, dictionary contain class initialization parameters.
 
-        Returns:
+        Returns: DummyScaler.
 
         """
         return cls()

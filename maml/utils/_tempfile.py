@@ -1,25 +1,25 @@
 """
 Temporary directory and file creation utilities.
-This file is adapted from monty.tempfile
+This file is adapted from monty.tempfile.
 """
+
+from __future__ import annotations
 
 import os
 import shutil
 import tempfile
 import warnings
 from pathlib import Path
-from typing import Any, List, Optional, Union
+from typing import Any
 
 from monty.shutil import copy_r, remove
 
 
 class MultiScratchDir:
     """
+    Automatically handles creation of temporary directories (utilizing Python's build in temp directory functions).
 
-    Creates a "with" context manager that automatically handles creation of
-    temporary directories (utilizing Python's build in temp directory
-    functions) and cleanup when done. The main difference between this class
-    and monty ScratchDir is that multiple temp directories are created here.
+    The main difference between this class and monty ScratchDir is that multiple temp directories are created here.
     It enables the running of multiple jobs simultaneously in the directories
     The way it works is as follows:
 
@@ -35,7 +35,7 @@ class MultiScratchDir:
 
     def __init__(
         self,
-        rootpath: Union[str, Path],
+        rootpath: str | Path,
         n_dirs: int = 1,
         create_symbolic_link: bool = False,
         copy_from_current_on_enter: bool = False,
@@ -50,6 +50,7 @@ class MultiScratchDir:
                 do_something()
         If the root path does not exist or is None, this will function as a
         simple pass through, i.e., nothing happens.
+
         Args:
             rootpath (str/Path): Path in which to create temp subdirectories.
                 If this is None, no temp directories will be created and
@@ -76,7 +77,7 @@ class MultiScratchDir:
         self.create_symbolic_link = create_symbolic_link
         self.start_copy = copy_from_current_on_enter
         self.end_copy = copy_to_current_on_exit
-        self.tempdirs: List[str] = []
+        self.tempdirs: list[str] = []
 
     def __enter__(self):
         tempdirs = [self.cwd] * self.n_dirs
@@ -89,26 +90,28 @@ class MultiScratchDir:
                 [os.symlink(tempdir, f"{MultiScratchDir.SCR_LINK}_{i}") for i, tempdir in enumerate(tempdirs)]
         return tempdirs
 
-    def __exit__(self, exc_type: str, exc_val: str, exc_tb: str):
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object):
         if self.rootpath is not None and os.path.exists(self.rootpath):
             if self.end_copy:
                 # First copy files over
                 [_copy_r_with_suffix(tempdir, self.cwd, i) for i, tempdir in enumerate(self.tempdirs)]
 
             os.chdir(self.cwd)
-            [remove(tempdir) for tempdir in self.tempdirs]
+            for tempdir in self.tempdirs:
+                remove(tempdir)
 
 
-def _copy_r_with_suffix(src: str, dst: str, suffix: Optional[Any] = None):
+def _copy_r_with_suffix(src: str, dst: str, suffix: Any | None = None):
     """
     Implements a recursive copy function similar to Unix's "cp -r" command.
     Surprisingly, python does not have a real equivalent. shutil.copytree
     only works if the destination directory is not present.
+
     Args:
         src (str): Source folder to copy.
         dst (str): Destination folder.
+        suffix: Suffix to be added for copied files.
     """
-
     abssrc = os.path.abspath(src)
     absdst = os.path.abspath(dst)
 
@@ -121,7 +124,7 @@ def _copy_r_with_suffix(src: str, dst: str, suffix: Optional[Any] = None):
         fpath = os.path.join(abssrc, f)
         if os.path.isfile(fpath):
             if suffix is not None:
-                new_path = f"{fpath}_{str(suffix)}"
+                new_path = f"{fpath}_{suffix!s}"
                 shutil.copy(fpath, new_path)
                 fpath = new_path
             shutil.copy(fpath, absdst)

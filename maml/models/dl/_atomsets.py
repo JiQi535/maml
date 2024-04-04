@@ -1,6 +1,5 @@
-"""
-neural network models
-"""
+"""neural network models."""
+
 from __future__ import annotations
 
 import json
@@ -52,6 +51,7 @@ def construct_atom_sets(
         optimizer (str): optimizer for the models
         loss (str): loss function for the models
         compile_metrics (tuple): metrics for validation
+        is_classification (bool): Whether to construct a classification model.
         symmetry_func_kwargs (dict): kwargs for symmetry function
     """
     from tensorflow.keras.layers import Concatenate, Dense, Embedding, Input
@@ -94,10 +94,7 @@ def construct_atom_sets(
         symmetry_layers.append(layer)
     outs = [i([out_, weight_inputs, node_ids]) for i in symmetry_layers]
 
-    if len(outs) > 1:
-        out_ = Concatenate(axis=-1)(outs)
-    else:
-        out_ = outs[0]
+    out_ = Concatenate(axis=-1)(outs) if len(outs) > 1 else outs[0]
 
     # neural networks
     for n_neuron in n_neurons_final:
@@ -114,9 +111,7 @@ def construct_atom_sets(
 
 
 class AtomSets(KerasModel):
-    r"""
-    This class implements the DeepSets models
-    """
+    r"""This class implements the DeepSets models."""
 
     def __init__(
         self,
@@ -151,10 +146,11 @@ class AtomSets(KerasModel):
                 'max', 'min', 'prod']
             optimizer (str): optimizer for the models
             loss (str): loss function for the models
-            symmetry_func_kwargs (dict): kwargs for symmetry function
+            compile_metrics (tuple): metrics for validation
+            is_classification (bool): Whether to construct a classification model.
+            symmetry_func_kwargs (dict): kwargs for symmetry function.
 
         """
-
         input_dim = self.get_input_dim(describer, input_dim)
 
         optimizer = deserialize_keras_optimizer(optimizer)
@@ -207,7 +203,13 @@ class AtomSets(KerasModel):
         is_embedding = self.is_embedding
 
         class _DataGenerator(KerasSequence):
-            def __init__(self, features=features, targets=targets, batch_size=batch_size, is_shuffle=is_shuffle):
+            def __init__(
+                self,
+                features=features,
+                targets=targets,
+                batch_size=batch_size,
+                is_shuffle=is_shuffle,
+            ):
                 if isinstance(features[0], list) and len(features[0]) == 2:
                     self.features = [i[0] for i in features]
                     self.weights = [i[1] for i in features]
@@ -237,9 +239,7 @@ class AtomSets(KerasModel):
                 ), np.array(batch_y)[None, :]
 
             def on_epoch_end(self):
-                """
-                Codes executed at the end of each epoch
-                """
+                """Codes executed at the end of each epoch."""
                 if self.is_shuffle:
                     indices = list(range(len(self.features)))
                     np.random.shuffle(indices)
@@ -250,7 +250,7 @@ class AtomSets(KerasModel):
         return _DataGenerator()
 
     def save(self, dirname: str):
-        """Save the models and describers
+        """Save the models and describers.
 
         Arguments:
             dirname (str): dirname for save
@@ -260,7 +260,7 @@ class AtomSets(KerasModel):
         if not os.path.isdir(dirname):
             os.mkdir(dirname)
 
-        joblib.dump(self.describer, os.path.join(dirname, "describer.sav"))
+        joblib.dump(self.describer, os.path.join(dirname, "describers.sav"))
 
         def _to_json_type(d):
             if isinstance(d, dict):
@@ -301,7 +301,7 @@ class AtomSets(KerasModel):
         Load the models from file
         Args:
             dirname (str): directory name
-        Returns: object instance
+        Returns: object instance.
         """
         with open(os.path.join(dirname, "config.json")) as f:
             kwarg_dict = json.load(f)
@@ -309,7 +309,7 @@ class AtomSets(KerasModel):
         symmetry_kwargs = kwarg_dict.pop("symmetry_func_kwargs")
         kwarg_dict.update(**symmetry_kwargs)
 
-        describer = joblib.load(os.path.join(dirname, "describer.sav"))
+        describer = joblib.load(os.path.join(dirname, "describers.sav"))
         instance = cls(describer=describer, **kwarg_dict)
         instance.model.load_weights(os.path.join(dirname, "model_weights.hdf5"))
         return instance
@@ -330,7 +330,8 @@ class AtomSets(KerasModel):
             targets (list or np.ndarray): Numerical output target list, or
                 numpy array with dim (m, ).
             val_features (list or np.ndarray): validation features
-            val_targets (list or np.ndarray): validation targets
+            val_targets (list or np.ndarray): validation targets.
+            **kwargs: pass to the fit method of BaseModel.
 
         """
         batch_size = kwargs.pop("batch_size", 128)
@@ -347,6 +348,7 @@ class AtomSets(KerasModel):
 
         Args:
             features (np.ndarray): array-like input features.
+            **kwargs: pass to the _get_data_generator method.
 
         Returns:
             List of output objects.
@@ -359,7 +361,7 @@ class AtomSets(KerasModel):
 
     def evaluate(self, eval_objs, eval_targets, is_feature: bool = False, batch_size: int = 16):
         """
-        Evaluate objs, targets
+        Evaluate objs, targets.
 
         Args:
             eval_objs (list): objs for evaluation

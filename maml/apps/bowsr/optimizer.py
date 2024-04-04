@@ -1,10 +1,10 @@
-"""
-Module implements the BayesianOptimizer.
-"""
+"""Module implements the BayesianOptimizer."""
+
 from __future__ import annotations
 
 import warnings
 from copy import copy
+from typing import TYPE_CHECKING
 
 import numpy as np
 from pymatgen.core.operations import SymmOp
@@ -14,19 +14,13 @@ from sklearn.base import clone
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RationalQuadratic
 
-from maml.apps.bowsr.acquisition import (
-    AcquisitionFunction,
-    ensure_rng,
-    propose_query_point,
-)
-from maml.apps.bowsr.model import EnergyModel
-from maml.apps.bowsr.perturbation import (
-    LatticePerturbation,
-    WyckoffPerturbation,
-    get_standardized_structure,
-)
+from maml.apps.bowsr.acquisition import AcquisitionFunction, ensure_rng, propose_query_point
+from maml.apps.bowsr.perturbation import LatticePerturbation, WyckoffPerturbation, get_standardized_structure
 from maml.apps.bowsr.preprocessing import DummyScaler, StandardScaler
 from maml.apps.bowsr.target_space import TargetSpace
+
+if TYPE_CHECKING:
+    from maml.apps.bowsr.model import EnergyModel
 
 
 def struct2perturbation(
@@ -58,7 +52,6 @@ def struct2perturbation(
         lp (LatticePerturbation): LatticePerturbation for derivation of lattice
             of the structure.
     """
-
     sa = SpacegroupAnalyzer(structure, symprec=symprec)
     sd = sa.get_symmetry_dataset()
     spg_int_number = sd["number"]
@@ -88,7 +81,7 @@ def struct2perturbation(
     lp = LatticePerturbation(spg_int_number, use_symmetry=use_symmetry)
     lp.sanity_check(structure.lattice, abc_tol=abc_tol, angle_tol=angle_tol)
 
-    return tuple((wps, indices, mapping, lp))  # type: ignore
+    return (wps, indices, mapping, lp)  # type: ignore
 
 
 def atoms_crowded(structure: Structure, cutoff_distance: float = 1.1) -> bool:
@@ -105,9 +98,7 @@ def atoms_crowded(structure: Structure, cutoff_distance: float = 1.1) -> bool:
 
 
 class BayesianOptimizer:
-    """
-    Bayesian optimizer used to optimize the structure.
-    """
+    """Bayesian optimizer used to optimize the structure."""
 
     def __init__(
         self,
@@ -135,15 +126,13 @@ class BayesianOptimizer:
                 (predictive GP posterior).
             seed (int): Seeded rng for random number generator. None
                 for an unseeded rng.
+            **kwargs: Passthrough.
         """
         random_state = ensure_rng(seed)
         self.model = model
         self.noisy = noisy
         self.use_symmetry = use_symmetry
-        if use_scaler:
-            scaler = StandardScaler()
-        else:
-            scaler = DummyScaler()
+        scaler = StandardScaler() if use_scaler else DummyScaler()
         self.scaler = scaler
 
         structure.remove_oxidation_states()
@@ -170,7 +159,7 @@ class BayesianOptimizer:
             angles_dim=angles_dim,
             relax_coords=relax_coords,
             relax_lattice=relax_lattice,
-            scaler=scaler,
+            scaler=scaler,  # type: ignore
             random_state=random_state,
         )
         self.wps = wps
@@ -193,7 +182,6 @@ class BayesianOptimizer:
         Args:
             x (ndarray): The input of getting perturbed structure.
         """
-
         struct = self.structure.copy()
         lattice = struct.lattice
         species = [dict(site.species.as_dict()) for site in struct]
@@ -223,9 +211,7 @@ class BayesianOptimizer:
         lattice_parameters = np.array(abc + angles) + x_lattice
         lattice = Lattice.from_parameters(*lattice_parameters)
 
-        derived_struct = Structure(lattice=lattice, species=species, coords=frac_coords)
-
-        return derived_struct
+        return Structure(lattice=lattice, species=species, coords=frac_coords)
 
     def get_formation_energy(self, x: np.ndarray) -> float:
         """
@@ -262,7 +248,6 @@ class BayesianOptimizer:
                 point for minimization.
             sampler (str): Sampler. Options are Latin Hyperparameter Sampling and uniform sampling.
         """
-
         # Sklearn's GaussianProcessRegressor throws a large number of warnings at times
         # which are unnecessary to be seen.
         with warnings.catch_warnings():
@@ -277,7 +262,7 @@ class BayesianOptimizer:
             noise = 0.0
 
         # Find the next point that maximize the acquisition function.
-        x_next = propose_query_point(
+        return propose_query_point(
             acquisition=acquisition_function.calculate,
             scaler=self.scaler,
             gpr=self.gpr,
@@ -288,7 +273,6 @@ class BayesianOptimizer:
             sampler=sampler,
             n_warmup=n_warmup,
         )
-        return x_next
 
     def optimize(
         self,
@@ -320,6 +304,7 @@ class BayesianOptimizer:
                 point for minimization.
             is_continue (bool): whether to continue previous run without resetting GPR
             sampler (str): Sampler generating initial points. "uniform" or "lhs".
+            **gpr_params: Passthrough.
         """
         # print('Optimize begins!')
         self.set_gpr_params(**gpr_params)
@@ -335,7 +320,7 @@ class BayesianOptimizer:
                 params = np.concatenate(
                     ([np.zeros(self.space.dim)], [self.space.uniform_sample() for _ in range(n_init)])
                 )
-            self.scaler.fit(params)
+            self.scaler.fit(params)  # type: ignore
 
             for x in params:
                 self.add_query(x)
@@ -355,21 +340,19 @@ class BayesianOptimizer:
         optimized_structure = self.structure.copy()
         idx = 0
         for idx in np.argsort(self.space.target)[::-1]:
-            optimized_structure = self.get_derived_structure(self.scaler.inverse_transform(self.space.params[idx]))
+            optimized_structure = self.get_derived_structure(
+                self.scaler.inverse_transform(self.space.params[idx])  # type: ignore
+            )
             if not atoms_crowded(optimized_structure, cutoff_distance=cutoff_distance):
                 break
-        return tuple((optimized_structure, -self.space.target[idx]))
+        return (optimized_structure, -self.space.target[idx])
 
     def set_space_empty(self) -> None:
-        """
-        Empty the target space.
-        """
+        """Empty the target space."""
         self.space.set_empty()
 
     def set_bounds(self, **bounds_parameter) -> None:
-        """
-        Set the bound value of wyckoff perturbation and lattice perturbation.
-        """
+        """Set the bound value of wyckoff perturbation and lattice perturbation."""
         if bounds_parameter.get("abc_bound") is not None:
             abc_bound = bounds_parameter.get("abc_bound")
             bounds_parameter.pop("abc_bound")
@@ -382,23 +365,17 @@ class BayesianOptimizer:
         self.space.set_bounds(abc_bound=abc_bound, **bounds_parameter)
 
     def set_gpr_params(self, **gpr_params) -> None:
-        """
-        Set the parameters of internal GaussianProcessRegressor.
-        """
+        """Set the parameters of internal GaussianProcessRegressor."""
         self._gpr.set_params(**gpr_params)
 
     @property
     def space(self):
-        """
-        Returns the target space.
-        """
+        """Returns the target space."""
         return self._space
 
     @property
     def gpr(self):
-        """
-        Returns the Gaussian Process regressor.
-        """
+        """Returns the Gaussian Process regressor."""
         return self._gpr
 
     def __repr__(self):
@@ -406,29 +383,26 @@ class BayesianOptimizer:
             f"{self.__class__.__name__}(relax_coords={self.relax_coords}, relax_lattice={self.relax_lattice}, "
             f"use_symmetry={self.use_symmetry}"
             f"\n\t\twyckoff_dims={self.wyckoff_dims}, abc_dim={self.abc_dim}, "
-            f"\n\t\tangles_dim={self.angles_dim}, kernel={repr(self.gpr.kernel)}, "
+            f"\n\t\tangles_dim={self.angles_dim}, kernel={self.gpr.kernel!r}, "
             f"scaler={self.scaler.__class__.__name__}, noisy={self.noisy})"
         )
 
     def as_dict(self):
-        """
-        Dict representation of BayesianOptimizer.
-        """
+        """Dict representation of BayesianOptimizer."""
 
         def serialize(t) -> tuple:
             """
-            serialize the object
+            serialize the object.
+
             Args:
-                t:
+                t: object
             Returns:
 
             """
             return tuple([int(num) for num in item] if isinstance(item, np.ndarray) else item for item in t)
 
         def gpr_as_dict(gpr):
-            """
-            Serialize the GaussianProcessRegressor.
-            """
+            """Serialize the GaussianProcessRegressor."""
             gpr_dict = gpr.get_params()
             gpr_dict["X_train_"] = gpr.X_train_.tolist()
             gpr_dict["alpha_"] = gpr.alpha_.tolist()
@@ -443,7 +417,7 @@ class BayesianOptimizer:
 
             return gpr_dict
 
-        d = {
+        return {
             "@module": self.__class__.__module__,
             "@class": self.__class__.__name__,
             "structure": self.structure.as_dict(),
@@ -462,22 +436,18 @@ class BayesianOptimizer:
             "noisy": self.noisy,
         }
 
-        return d
-
     @classmethod
     def from_dict(cls, d):
         """
         Reconstitute a BayesianOptimizer object from a dict representation of
         BayesianOptimizer created using as_dict().
 
-        Args
+        Args:
             d (dict): Dict representation of BayesianOptimizer.
         """
 
         def gpr_from_dict(gpr_d):
-            """
-            Instantiate GaussianProcessRegressor from serialization.
-            """
+            """Instantiate GaussianProcessRegressor from serialization."""
             import sklearn.gaussian_process.kernels as sk_kernels
 
             d = gpr_d.copy()

@@ -1,15 +1,19 @@
-"""
-megnet model wrapper implementation
-"""
+"""megnet model wrapper implementation."""
+
+from __future__ import annotations
+
 import os
 import warnings
+from typing import TYPE_CHECKING
 
 import numpy as np
 from monty.dev import requires
 from pymatgen.core.periodic_table import Element
-from pymatgen.core.structure import Structure
 
 from maml.apps.bowsr.model.base import EnergyModel
+
+if TYPE_CHECKING:
+    from pymatgen.core.structure import Structure
 
 try:
     import megnet
@@ -29,18 +33,16 @@ model_filename = os.path.join(module_dir, "model_files", "megnet", "formation_en
 
 @requires(megnet is not None, "megnet package needs to be installed to use this module")
 class MEGNet(EnergyModel):
-    """
-    MEGNetModel wrapper.
-    """
+    """MEGNetModel wrapper."""
 
     def __init__(self, model=None, reconstruct=False, **kwargs):
         """
 
         Args:
-            model:  MEGNet energy model
+            model:  MEGNet energy model.
             reconstruct: Whether to reconstruct the model (used in
-                disordered model)
-            **kwargs:
+                disordered model).
+            **kwargs: "gaussian_cutoff", "radius_cutoff", and "npass".
         """
         model = model or MEGNetModel.from_file(model_filename)
         gaussian_cutoff = kwargs.get("gaussian_cutoff", 6)
@@ -51,7 +53,8 @@ class MEGNet(EnergyModel):
         self.embedding = weights[0]
         if reconstruct:
             cg = CrystalGraph(
-                bond_converter=GaussianDistance(np.linspace(0, gaussian_cutoff, 100), 0.5), cutoff=radius_cutoff
+                bond_converter=GaussianDistance(np.linspace(0, gaussian_cutoff, 100), 0.5),
+                cutoff=radius_cutoff,
             )
             model_new = MEGNetModel(100, 2, 16, npass=npass, graph_converter=cg)
             model_new.set_weights(weights[1:])
@@ -63,7 +66,7 @@ class MEGNet(EnergyModel):
         """
         Predict energy from structure
         Args:
-            structure: (pymatgen Structure)
+            structure: (pymatgen Structure).
 
         Returns: float
         """

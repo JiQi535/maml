@@ -1,8 +1,8 @@
-"""
-LAMMPS utility
-"""
+"""LAMMPS utility."""
+
+from __future__ import annotations
+
 import logging
-from typing import List, Optional, Tuple, Union
 
 import numpy as np
 from pymatgen.core import Element, Lattice, Species, Structure
@@ -20,9 +20,9 @@ STRESS_FORMAT = {
 
 
 def check_structures_forces_stresses(
-    structures: List[Structure],
-    forces: Optional[List] = None,
-    stresses: Optional[List] = None,
+    structures: list[Structure],
+    forces: list | None = None,
+    stresses: list | None = None,
     stress_format: str = "VASP",
     return_none: bool = True,
 ):
@@ -32,7 +32,7 @@ def check_structures_forces_stresses(
     and the corresponding forces and structures to lammps format
     [[ax, 0, 0],
     [bx, by, 0],
-    [cx, cy, cz]]
+    [cx, cy, cz]].
 
     The lattice are formed by the row vectors.
 
@@ -48,7 +48,6 @@ def check_structures_forces_stresses(
     Returns: structures [forces], [stresses]
 
     """
-
     new_structures = []
     new_forces = []
     new_stresses = []
@@ -73,7 +72,11 @@ def check_structures_forces_stresses(
         new_latt_matrix, symmop, rot_matrix = get_lammps_lattice_and_rotation(s, (0, 0, 0))
         coords = symmop.operate_multi(s.cart_coords)
         new_s = Structure(
-            Lattice(new_latt_matrix), s.species, coords, site_properties=s.site_properties, coords_are_cartesian=True
+            Lattice(new_latt_matrix),  # type: ignore
+            s.species,  # type: ignore
+            coords,  # type: ignore
+            site_properties=s.site_properties,
+            coords_are_cartesian=True,
         )
         new_structures.append(new_s)
 
@@ -116,7 +119,7 @@ def stress_matrix_to_list(stress_matrix: np.ndarray, stress_format: str = "VASP"
     Args:
         stress_matrix (np.ndarray): stress matrix 3x3
         stress_format (str): stress list format
-    Returns: list of float stress vector
+    Returns: list of float stress vector.
     """
     vasp_format = np.array(
         [
@@ -131,9 +134,9 @@ def stress_matrix_to_list(stress_matrix: np.ndarray, stress_format: str = "VASP"
     return stress_format_change(vasp_format, "VASP", stress_format)
 
 
-def stress_list_to_matrix(stress: Union[np.ndarray, List[float]], stress_format: str = "VASP") -> np.ndarray:
+def stress_list_to_matrix(stress: np.ndarray | list[float], stress_format: str = "VASP") -> np.ndarray:
     """
-    convert a length-6 stress list to stress matrix 3x3
+    convert a length-6 stress list to stress matrix 3x3.
 
     Args:
         stress (list of float): list of stress
@@ -148,13 +151,13 @@ def stress_list_to_matrix(stress: Union[np.ndarray, List[float]], stress_format:
     return np.array([[xx, xy, xz], [xy, yy, yz], [xz, yz, zz]])
 
 
-def stress_format_change(stress: Union[np.ndarray, List[float]], from_format: str, to_format: str) -> np.ndarray:
+def stress_format_change(stress: np.ndarray | list[float], from_format: str, to_format: str) -> np.ndarray:
     """
     Convert stress format from from_format to to_format
     Args:
         stress (list of float): length-6 stress vector
         from_format (str): choose from "VASP", "LAMMPS", "SNAP"
-        to_format (str): choose from "VASP", "LAMMPS", "SNAP"
+        to_format (str): choose from "VASP", "LAMMPS", "SNAP".
 
     Returns: list of float stress vector
     """
@@ -164,10 +167,10 @@ def stress_format_change(stress: Union[np.ndarray, List[float]], from_format: st
     return np.array([stress[0], stress[1], stress[2], *[stress[i] for i in mapping]])
 
 
-def get_lammps_lattice_and_rotation(structure: Structure, origin=(0, 0, 0)) -> Tuple[np.ndarray, SymmOp, np.ndarray]:
+def get_lammps_lattice_and_rotation(structure: Structure, origin=(0, 0, 0)) -> tuple[np.ndarray, SymmOp, np.ndarray]:
     """
     Transform structure to lammps compatible structure. The lattice and rotation
-    matrix are returned
+    matrix are returned.
 
     Args:
         structure (Structure): pymatgen structure
@@ -176,7 +179,6 @@ def get_lammps_lattice_and_rotation(structure: Structure, origin=(0, 0, 0)) -> T
     Returns: new lattice, rotation symmetry operator, rotation matrix
 
     """
-
     lattice = structure.lattice
     a, b, c = lattice.abc
     xlo, ylo, zlo = origin
@@ -197,13 +199,13 @@ def get_lammps_lattice_and_rotation(structure: Structure, origin=(0, 0, 0)) -> T
 def write_data_from_structure(
     structure: Structure,
     filename: str,
-    ff_elements: Optional[List[str]] = None,
+    ff_elements: list[str] | None = None,
     significant_figures: int = 6,
     origin: tuple = (0, 0, 0),
 ):
     """
     Write structure to lammps data file, this is to speed up
-    pymatgen LammpsData
+    pymatgen LammpsData.
 
     Args:a
         structure (Structure): pymatgen structure
@@ -270,7 +272,7 @@ def write_data_from_structure(
 
 def _get_atomic_mass(element_or_specie: str) -> float:  # type: ignore
     """
-    Get atomic mass from element or specie string
+    Get atomic mass from element or specie string.
 
     Args:
         element_or_specie (str): specie or element string
@@ -284,9 +286,9 @@ def _get_atomic_mass(element_or_specie: str) -> float:  # type: ignore
         return Species.from_string(element_or_specie).element.atomic_mass
 
 
-def _get_charge(element_or_specie: Union[str, Element, Species]) -> float:  # type: ignore
+def _get_charge(element_or_specie: str | Element | Species) -> float:  # type: ignore
     """
-    Get charge from element or specie
+    Get charge from element or specie.
 
     Args:
         element_or_specie (str or Element or Species): element or specie
@@ -294,7 +296,6 @@ def _get_charge(element_or_specie: Union[str, Element, Species]) -> float:  # ty
     Returns: charge float
 
     """
-
     if isinstance(element_or_specie, Species):
         return element_or_specie.oxi_state  # type: ignore
     if isinstance(element_or_specie, str):
