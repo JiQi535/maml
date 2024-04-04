@@ -1,6 +1,5 @@
-"""
-Module implements the describer for GB entry
-"""
+"""Module implements the describers for GB entry."""
+
 from __future__ import annotations
 
 from functools import reduce
@@ -43,7 +42,7 @@ def convert_hcp_direction(rotation_axis: list, lat_type: str) -> np.ndarray:
         rotation_axis (list): four index notion of axis
         lat_type(str): the
     Returns:
-        rotation axis in three index notion
+        rotation axis in three index notion.
     """
     u1 = rotation_axis[0]
     v1 = rotation_axis[1]
@@ -69,7 +68,7 @@ def convert_hcp_plane(plane: list) -> np.ndarray:
     """
     four index notion to three index notion for hcp and rhombohedral plane
     Args:
-        plane (list):  four index notion
+        plane (list):  four index notion.
 
     Returns:
         three index notion of plane
@@ -87,28 +86,49 @@ def convert_hcp_plane(plane: list) -> np.ndarray:
 
 class GBDescriber(BaseDescriber):
     """
-    The describer that describes the grain boundary db entry
-    with selected structural and elemental features
+    The describers that describes the grain boundary db entry
+    with selected structural and elemental features.
     """
 
-    def __init__(self, structural_features: list | None = None, elemental_features: list | None = None, **kwargs):
+    def __init__(
+        self,
+        structural_features: list | None = None,
+        elemental_features: list | None = None,
+        **kwargs,
+    ):
         """
 
         Args:
             structural_features (list): list of structural features
             elemental_features (list): list of elemental features
-            **kwargs (dict): parameters for BaseDescriber
+            **kwargs (dict): parameters for BaseDescriber.
         """
         if not elemental_features:
-            elemental_features = [preset.e_coh, preset.G, preset.a0, preset.ar, preset.mean_delta_bl, preset.mean_bl]
+            elemental_features = [
+                preset.e_coh,
+                preset.G,
+                preset.a0,
+                preset.ar,
+                preset.mean_delta_bl,
+                preset.mean_bl,
+            ]
         if not structural_features:
-            structural_features = [preset.d_gb, preset.d_rot, preset.sin_theta, preset.cos_theta]
+            structural_features = [
+                preset.d_gb,
+                preset.d_rot,
+                preset.sin_theta,
+                preset.cos_theta,
+            ]
         self.elem_features = elemental_features
         self.struc_features = structural_features
         super().__init__(**kwargs)
 
     def transform_one(
-        self, db_entry: dict, inc_target: bool = True, inc_bulk_ref: bool = True, mp_api: str | None = None
+        self,
+        db_entry: dict,
+        inc_target: bool = True,
+        inc_bulk_ref: bool = True,
+        mp_api: str | None = None,
     ) -> pd.DataFrame:
         """
         Describe gb with selected structural and elemental features
@@ -118,7 +138,7 @@ class GBDescriber(BaseDescriber):
             inc_bulk_ref (bool): whether to generate bulk reference
                 bulk reference: i.e. the entry of the origin bulk of the GB,
                                 the rotation angle (theta) = 0, gb_energy = 0
-            mp_api (str): MP api key
+            mp_api (str): MP api key.
 
 
         Returns: pd.DataFrame of processed data, columns are the feature labels
@@ -141,7 +161,7 @@ class GBDescriber(BaseDescriber):
         Generate the bulk reference for given gb entry
         Args:
             gb_df (pd.DataFrame): data for gb
-            inc_target (bool) : whether to include target
+            inc_target (bool) : whether to include target.
 
         Returns:
             bulk_df (pd.DataFrame): data for bulk
@@ -163,10 +183,11 @@ def get_structural_feature(db_entry: dict, features: list | None = None) -> pd.D
     d_gb: interplanal distance of the gb_plane
     d_rot: interplanal distance of the gb_plane
         w/ smallest integer index ) normal to rotation axis
-    theta: rotation angle (sin and cos)
+    theta: rotation angle (sin and cos).
+
     Args:
         db_entry (Dict): db entry
-        features (List): list of features
+        features (List): list of features.
 
 
     Returns:
@@ -202,7 +223,10 @@ def get_structural_feature(db_entry: dict, features: list | None = None) -> pd.D
 
 
 def get_elemental_feature(
-    db_entry: dict, loc_algo: str = "crystalnn", features: list | None = None, mp_api: str | None = None
+    db_entry: dict,
+    loc_algo: str = "crystalnn",
+    features: list | None = None,
+    mp_api: str | None = None,
 ) -> pd.DataFrame:
     """
     Function to get the elemental features
@@ -219,7 +243,7 @@ def get_elemental_feature(
                 mean_delta_bl: the mean bond length difference
                     between GB and the bulk
                 bl: the mean bond length in GB
-        mp_api(str): api key to MP
+        mp_api(str): api key to MP.
 
     Returns:
         pd.DataFrame of elemental features
@@ -279,7 +303,7 @@ class GBBond(MSONable):
     """
     This class describes the GB Bonding environment using provided
     local environment algorithm.
-    Available algorithms: GBBond.NNDict.keys(), default CrystalNN
+    Available algorithms: GBBond.NNDict.keys(), default CrystalNN.
     """
 
     NNDict = {
@@ -303,7 +327,13 @@ class GBBond(MSONable):
         ]
     }
 
-    def __init__(self, gb: GrainBoundary, loc_algo: str = "crystalnn", bond_mat: np.ndarray | None = None, **kwargs):
+    def __init__(
+        self,
+        gb: GrainBoundary,
+        loc_algo: str = "crystalnn",
+        bond_mat: np.ndarray | None = None,
+        **kwargs,
+    ):
         """
 
         Args:
@@ -311,8 +341,8 @@ class GBBond(MSONable):
             loc_algo (str): algorithm to determine local env.
                     See options: GBBond.NNDict.keys()
                     Default: crystalnn
-            bond_mat (np.ndarray): optional
-
+            bond_mat (np.ndarray): optional.
+            **kwargs: pass to loc_algo.
         """
         self.loc_algo = self.NNDict[loc_algo](**kwargs)
         self.gb = gb
@@ -325,7 +355,7 @@ class GBBond(MSONable):
         """
 
         Args:
-            gb (GrainBoundary): the grain boundary structure object
+            gb (GrainBoundary): the grain boundary structure object.
 
         Returns:
             bond matrix
@@ -355,7 +385,7 @@ class GBBond(MSONable):
         compared to the bulk bond length (b0)
         The algo to find the bonds can vary
         Meme: if use get_neighbors, require a hard set cutoff, which adds to
-            arbitrariness
+            arbitrariness.
 
         Args:
             gb (GrainBoundary): a GrainBoundary object
@@ -369,7 +399,6 @@ class GBBond(MSONable):
             shorter_bond: # of short bonds
             longer_bond: # of long bonds
         """
-
         if not self.bond_mat:
             self._get_bond_mat(gb)
         long_bond = (self.bond_mat > b0).sum()
@@ -381,30 +410,24 @@ class GBBond(MSONable):
 
     @property
     def min_bl(self) -> float:
-        """
-        The minimum bond length
-        """
+        """The minimum bond length."""
         return self.bond_mat[self.bond_mat > 0].min()
 
     @property
     def max_bl(self) -> float:
-        """
-        The maximum bond length
-        """
+        """The maximum bond length."""
         return self.bond_mat.max()
 
     @property
     def bond_matrix(self) -> np.ndarray:
-        """
-        The (padded) bond matrix
-        """
+        """The (padded) bond matrix."""
         return self.bond_mat
 
     def get_mean_bl_chg(self, b0: float) -> float:
         """
         Function to calculate the mean bond length difference between GB and the bulk
         Args:
-            b0 (float): the bond length in bulk
+            b0 (float): the bond length in bulk.
 
         Returns: the mean_bl_chg
 
@@ -413,7 +436,7 @@ class GBBond(MSONable):
 
     def as_dict(self) -> dict:
         """
-        Dict representation of the GBond class
+        Dict representation of the GBond class.
 
         Returns:
             dict of {"loc_algo": str, "bond_mat": bond matrix}
@@ -434,7 +457,7 @@ class GBBond(MSONable):
         """
 
         Args:
-            d (dict): Dict representation
+            d (dict): Dict representation.
 
         Returns:
             GBBond
