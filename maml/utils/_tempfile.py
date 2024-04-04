@@ -2,6 +2,7 @@
 Temporary directory and file creation utilities.
 This file is adapted from monty.tempfile.
 """
+
 from __future__ import annotations
 
 import os
@@ -16,11 +17,9 @@ from monty.shutil import copy_r, remove
 
 class MultiScratchDir:
     """
+    Automatically handles creation of temporary directories (utilizing Python's build in temp directory functions).
 
-    Creates a "with" context manager that automatically handles creation of
-    temporary directories (utilizing Python's build in temp directory
-    functions) and cleanup when done. The main difference between this class
-    and monty ScratchDir is that multiple temp directories are created here.
+    The main difference between this class and monty ScratchDir is that multiple temp directories are created here.
     It enables the running of multiple jobs simultaneously in the directories
     The way it works is as follows:
 
@@ -91,14 +90,15 @@ class MultiScratchDir:
                 [os.symlink(tempdir, f"{MultiScratchDir.SCR_LINK}_{i}") for i, tempdir in enumerate(tempdirs)]
         return tempdirs
 
-    def __exit__(self, exc_type: str, exc_val: str, exc_tb: str):
+    def __exit__(self, exc_type: object, exc_val: object, exc_tb: object):
         if self.rootpath is not None and os.path.exists(self.rootpath):
             if self.end_copy:
                 # First copy files over
                 [_copy_r_with_suffix(tempdir, self.cwd, i) for i, tempdir in enumerate(self.tempdirs)]
 
             os.chdir(self.cwd)
-            [remove(tempdir) for tempdir in self.tempdirs]
+            for tempdir in self.tempdirs:
+                remove(tempdir)
 
 
 def _copy_r_with_suffix(src: str, dst: str, suffix: Any | None = None):
@@ -110,6 +110,7 @@ def _copy_r_with_suffix(src: str, dst: str, suffix: Any | None = None):
     Args:
         src (str): Source folder to copy.
         dst (str): Destination folder.
+        suffix: Suffix to be added for copied files.
     """
     abssrc = os.path.abspath(src)
     absdst = os.path.abspath(dst)

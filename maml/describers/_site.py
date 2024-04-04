@@ -1,25 +1,24 @@
 """This module provides local environment describers."""
+
 from __future__ import annotations
 
 import itertools
 import logging
 import re
 import subprocess
+from shutil import which
 
 import numpy as np
 import pandas as pd
 from monty.io import zopen
-from monty.os.path import which
 from monty.tempfile import ScratchDir
 from pymatgen.core import Composition, Element, Molecule, Structure
 from pymatgen.core.periodic_table import get_el_sp
 
 from maml.base import BaseDescriber, describer_type
-from maml.describers.megnet import MEGNetSite
 from maml.utils import pool_from, to_composition
 
 __all__ = [
-    "MEGNetSite",
     "BispectrumCoefficients",
     "SmoothOverlapAtomicPosition",
     "BPSymmetryFunctions",
@@ -244,13 +243,13 @@ class SmoothOverlapAtomicPosition(BaseDescriber):
                 error_msg = f"quip/soap exited with return code {rc}"
                 msg = stdout.decode("utf-8").split("\n")[:-1]
                 try:
-                    error_line = [i for i, m in enumerate(msg) if m.startswith("ERROR")][0]
+                    error_line = next(i for i, m in enumerate(msg) if m.startswith("ERROR"))
                     error_msg += ", ".join(msg[error_line:])
                 except Exception:
                     error_msg += msg[-1]
                 raise RuntimeError(error_msg)
 
-            with zopen(descriptor_output, "rt") as f:
+            with zopen(descriptor_output, "rt") as f:  # type: ignore
                 lines = f.read()
 
             descriptor_pattern = re.compile("DESC(.*?)\n", re.S)
@@ -441,7 +440,7 @@ class SiteElementProperty(BaseDescriber):
         int_weights = weights.astype(int)  # type: ignore
         if not np.allclose(int_weights, weights):
             raise ValueError(
-                "Number of atoms are not integers and the describer"
+                "Number of atoms are not integers and the describers"
                 " cannot output single feature matrix. Try set "
                 "output_weights = True"
             )
@@ -452,5 +451,5 @@ class SiteElementProperty(BaseDescriber):
         """Feature dimension."""
         if self.feature_dict is None:
             return None
-        key = list(self.feature_dict.keys())[0]
+        key = next(iter(self.feature_dict.keys()))
         return np.array(self.feature_dict[key]).size

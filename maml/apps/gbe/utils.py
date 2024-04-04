@@ -1,4 +1,5 @@
 """Module implements helper functions to retrieve data for GB energy prediction paper."""
+
 from __future__ import annotations
 
 import os
@@ -94,6 +95,6 @@ def load_mean_delta_bl_dict(loc_algo: str = "crystalnn") -> dict:
         return loadfn(pjoin(REFS, f"mean_bl_chg_{loc_algo}.json"))
     raise ValueError(
         "Please provide mean_delta_bond_length data. "
-        "Use gbe.describer.GBond.get_mean_bl_chg method"
+        "Use gbe.describers.GBond.get_mean_bl_chg method"
         "to calculate mean_delta_bond_length"
     )
